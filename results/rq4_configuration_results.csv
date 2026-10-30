@@ -1,0 +1,19 @@
+Country,Model,Configuration,Validation Month,Validation MAE,N Validation Series,Best Epoch,Selected,n_estimators,max_depth,learning_rate,hidden_size,num_layers
+South Korea,XGBoost,XGBoost_3,2026-02,1645711.0,27823,,True,300.0,8.0,0.03,,
+South Korea,XGBoost,XGBoost_2,2026-02,1651236.0,27823,,False,300.0,6.0,0.05,,
+South Korea,XGBoost,XGBoost_1,2026-02,1724899.0,27823,,False,200.0,4.0,0.05,,
+Slovakia,XGBoost,XGBoost_1,2026-02,291797.2,21973,,True,200.0,4.0,0.05,,
+Slovakia,XGBoost,XGBoost_3,2026-02,295396.5,21973,,False,300.0,8.0,0.03,,
+Slovakia,XGBoost,XGBoost_2,2026-02,299742.4,21973,,False,300.0,6.0,0.05,,
+USA,XGBoost,XGBoost_3,2026-02,3911390.0,35843,,True,300.0,8.0,0.03,,
+USA,XGBoost,XGBoost_1,2026-02,3923460.0,35843,,False,200.0,4.0,0.05,,
+USA,XGBoost,XGBoost_2,2026-02,3924299.0,35843,,False,300.0,6.0,0.05,,
+South Korea,LSTM,LSTM_2,2026-02,1058063.0,27823,6.0,True,,,0.001,32.0,1.0
+South Korea,LSTM,LSTM_3,2026-02,1180645.0,27823,6.0,False,,,0.0005,32.0,2.0
+South Korea,LSTM,LSTM_1,2026-02,1303469.0,27823,9.0,False,,,0.001,16.0,1.0
+Slovakia,LSTM,LSTM_3,2026-02,250027.6,21973,1.0,True,,,0.0005,32.0,2.0
+Slovakia,LSTM,LSTM_1,2026-02,283658.1,21973,1.0,False,,,0.001,16.0,1.0
+Slovakia,LSTM,LSTM_2,2026-02,448693.4,21973,1.0,False,,,0.001,32.0,1.0
+USA,LSTM,LSTM_1,2026-02,2702092.0,35843,9.0,True,,,0.001,16.0,1.0
+USA,LSTM,LSTM_3,2026-02,2710258.0,35843,7.0,False,,,0.0005,32.0,2.0
+USA,LSTM,LSTM_2,2026-02,2838419.0,35843,7.0,False,,,0.001,32.0,1.0

@@ -1,25 +1,35 @@
-# Python
+# Python and local environments
 __pycache__/
 *.py[cod]
-*.pyo
-
-# Virtual environment
 .venv/
+venv/
+.env
+.env.*
+!.env.example
 
-# Jupyter
+# Notebook checkpoints and local editor settings
 .ipynb_checkpoints/
-
-# VS Code
 .vscode/
+.idea/
 
-# Data
-data/raw/
-data/processed/
-data/external/
+# Large source data and reproducible generated datasets
+/Data/raw/
+/Data/processed/
+/Data/processed_monthly_complete/
+/Data/forecasting/
+/Data/features/
 
-# Models
-models/
+# DuckDB working files and saved model binaries
+/Data/.duckdb_work/
+*.duckdb
+*.duckdb.wal
+*.duckdb.tmp/
+/models/
 
-# OS
+# OS files
 Thumbs.db
+Desktop.ini
 .DS_Store
+
+# Keep notebooks (including saved validation tables), src/, reports/,
+# requirements.txt, Data/external_signals/ and results/ in version control.
