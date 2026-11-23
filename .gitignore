@@ -28,6 +28,7 @@ venv/
 
 # Poster working folders and temporary files
 poster/
+/output/pdf/bilateral_trade_forecasting_poster_A0.pdf
 /tmp/
 
 # OS files
