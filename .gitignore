@@ -26,10 +26,15 @@ venv/
 *.duckdb.tmp/
 /models/
 
+# Poster working folders and temporary files
+poster/
+/tmp/
+
 # OS files
 Thumbs.db
 Desktop.ini
 .DS_Store
 
-# Keep notebooks (including saved validation tables), src/, reports/,
+# Keep notebooks (including saved validation tables), src/, reports/ (except poster/),
 # requirements.txt, Data/external_signals/ and results/ in version control.
+/results/extended_benchmark/predictions.parquet

@@ -1,5 +1,9 @@
 from pathlib import Path
+import ast
+import json
+
 import pandas as pd
+from bs4 import BeautifulSoup
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -13,6 +17,45 @@ COUNTRY_PREFIXES = {
 
 SERIES_KEYS = ["Country1", "Country2", "ProductCode", "TradeFlow"]
 TARGET = "Value"
+
+
+def read_notebook_setting(notebook_name, variable_name):
+    """Read a literal setting without executing the source notebook."""
+    path = PROJECT_ROOT / "notebooks" / notebook_name
+    notebook = json.loads(path.read_text(encoding="utf-8"))
+    for cell in notebook["cells"]:
+        if cell["cell_type"] != "code":
+            continue
+        for node in ast.walk(ast.parse("".join(cell["source"]))):
+            if isinstance(node, ast.Assign) and any(
+                isinstance(target, ast.Name) and target.id == variable_name
+                for target in node.targets
+            ):
+                return ast.literal_eval(node.value)
+    raise ValueError(f"{variable_name} was not found in {notebook_name}.")
+
+
+def read_validation_table(notebook_name, required_columns):
+    """Read a displayed validation table saved with a completed notebook."""
+    path = PROJECT_ROOT / "notebooks" / notebook_name
+    notebook = json.loads(path.read_text(encoding="utf-8"))
+    for cell in notebook["cells"]:
+        for output in cell.get("outputs", []):
+            html = "".join(output.get("data", {}).get("text/html", []))
+            for table in BeautifulSoup(html, "html.parser").find_all("table"):
+                columns = [item.get_text(strip=True) for item in table.select("thead th")]
+                columns = [name for name in columns if name]
+                if not set(required_columns).issubset(columns):
+                    continue
+                rows = [
+                    [item.get_text(strip=True) for item in row.find_all("td")]
+                    for row in table.select("tbody tr")
+                ]
+                return pd.DataFrame(rows, columns=columns)
+    raise ValueError(
+        f"Save {notebook_name} with its validation table outputs first. "
+        "No configuration is selected from test results."
+    )
 
 
 def load_forecasting_data(countries=None):

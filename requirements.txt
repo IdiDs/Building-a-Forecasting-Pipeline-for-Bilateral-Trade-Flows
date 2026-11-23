@@ -17,6 +17,9 @@ scikit-learn==1.9.0
 statsmodels==0.15.0
 xgboost==3.2.0
 torch==2.14.1
+chronos-forecasting==2.3.2
+# Compatible, verified inference backend for the pinned Chronos-Bolt checkpoint.
+transformers==4.57.6
 
 # Reading saved notebook tables
 beautifulsoup4==4.15.0

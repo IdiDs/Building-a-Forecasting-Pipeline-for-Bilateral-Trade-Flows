@@ -3,16 +3,16 @@
 **Benchmarking Time Series and Machine Learning Models**  
 Master's interdisciplinary Data Science project at TU Wien.
 
-This project forecasts monthly bilateral trade flows for **South Korea, Slovakia and the USA**. It compares six forecasting methods for **March 2026**, evaluates REER as an auxiliary data source, and examines historical forecast behaviour around the March 2021 Suez Canal blockage. Numbered notebooks contain the research workflow, figures and interpretation.
+This project forecasts monthly bilateral trade flows for **South Korea, Slovakia and the USA**. Two complementary views compare forecasting methods: a six-model benchmark for **March 2026**, and a seven-model benchmark including Chronos-Bolt Tiny across three forecast origins and horizons of one to three months. Further experiments evaluate REER as an auxiliary data source and examine historical forecast behaviour around the March 2021 Suez Canal blockage. Numbered notebooks contain the research workflow, figures and interpretation.
 
 ## Research questions
 
 | Question | Analysis |
 |---|---|
-| **RQ1:** How do machine learning models compare to classical time series approaches in forecasting trade flows? | March benchmark; notebook 15 |
+| **RQ1:** How do machine learning models compare to classical time series approaches in forecasting trade flows? | March benchmark and repeated comparisons by origin, horizon, flow, HS chapter and size; notebooks 15–17 |
 | **RQ2:** Do auxiliary data sources improve forecast accuracy? | Trade-only versus REER-enhanced XGBoost and LSTM; notebook 13 |
 | **RQ3:** How do machine learning and classical time series models differ in their ability to capture and adapt to disruptive trade shocks? | ARIMA and XGBoost around the Suez blockage; notebook 14 |
-| **RQ4:** What is the trade-off between model complexity and generalization performance? | Configuration comparisons and February-to-March performance; notebook 15 |
+| **RQ4:** What is the trade-off between model complexity and generalization performance? | Configuration choices, February-to-March performance, repeated accuracy and recorded evaluation-stage runtimes; notebooks 15–17 |
 
 REER is the auxiliary source chosen for RQ2. The experiment does not evaluate auxiliary data sources generally.
 
@@ -26,13 +26,14 @@ Data/
   features/                    Trade and calendar features
   forecasting/                 Training and March test datasets
   external_signals/            Downloaded BIS REER files
-notebooks/                    Main workflow, notebooks 01–15
+notebooks/                    Main workflow, notebooks 01–17
 src/
-  dataset_loading.py          Shared loaders and series identifiers
+  dataset_loading.py          Data loaders, series identifiers and saved notebook readers
   evaluation.py               Metrics and result-saving functions
 results/                      March benchmarks and RQ1/RQ4 outputs
   reer/                       Auxiliary-signal comparison outputs
   suez/                       Historical shock-analysis outputs
+  extended_benchmark/         Multi-origin forecasts, settings, metrics and figures
 reports/                      Proposal and report material
 requirements.txt              Python dependencies
 README.md                     Project overview and reproduction guide
@@ -111,8 +112,12 @@ For a full reconstruction, follow this order and execute each notebook from top 
 | [13 — External signals](notebooks/13_external_signal.ipynb) | Compare saved trade-only scores with fitted REER variants |
 | [14 — Suez analysis](notebooks/14_suez_canal_analysis.ipynb) | Generate historical January–June 2021 forecasts and evaluate shock response |
 | [15 — Model comparison](notebooks/15_model_comparison.ipynb) | Analyse saved benchmark and configuration results without training |
+| [16 — Extended forecasting benchmark](notebooks/16_extended_forecasting_benchmark.ipynb) | Select direct configurations and forecast three origins and horizons, including Chronos |
+| [17 — Extended results comparison](notebooks/17_extended_results_comparison.ipynb) | Compare saved forecasts by origin, horizon, HS chapter, flow and size without retraining |
 
 **Save notebooks 11 and 12 with their displayed validation tables intact.** Notebooks 13 and 15 read those saved tables and configuration dictionaries; notebook 14 reads the XGBoost selection from notebook 11. Separate validation-result files are not required.
+
+Notebooks 13, 14 and 16 reuse `read_notebook_setting` and, where needed, `read_validation_table` from `src/dataset_loading.py`. These readers inspect saved notebook content without executing it. Experiment-specific preparation and model code remain in the notebooks.
 
 Reuse prepared data and completed results when available. Notebooks 01–12 do not need to be rerun just to read the findings. Notebook 15 can run directly when its benchmark CSVs, March target files and saved validation outputs are present. Notebook 13 refits the REER models; notebook 14 refits historical models on every fresh run. Result-saving cells replace their documented output files when rerun.
 
@@ -141,19 +146,53 @@ Reuse prepared data and completed results when available. Notebooks 01–12 do n
 
 Benchmark CSVs contain aggregate metrics, not individual forecasts. REER and Suez predictions remain in notebook memory rather than separate prediction files. Suez period scores pool series-month errors: 400 observations before the event, 200 in March and 600 after it per country and model. Pooled RMSE combines squared errors before taking the square root.
 
+## Extended benchmark
+
+Run **16, then 17** for the additional experiment. The existing March, REER and Suez outputs remain separate. Notebook 16 reads `Data/processed/` and the candidate dictionaries in notebooks 11 and 12; it performs its own configuration selection rather than reusing their March choices.
+
+| History through | Horizon 1 | Horizon 2 | Horizon 3 |
+|---|---|---|---|
+| April 2025 | May 2025 | June 2025 | July 2025 |
+| August 2025 | September 2025 | October 2025 | November 2025 |
+| December 2025 | January 2026 | February 2026 | March 2026 |
+
+Cohort eligibility, partner selection and size terciles use December 2024 and earlier information. The series, HS chapter prefixes, flows and size classes stay fixed. Missing months remain zero, including later inactivity; no series cap is applied. Tied pre-cutoff trade values stay in the same size class, so terciles can have unequal counts.
+
+Configurations are selected separately by country and horizon: fit through December 2024 and validate January, February or March 2025 for horizons 1, 2 or 3. Separate direct XGBoost and LSTM models are refitted at each origin. Every LSTM refit selects new epochs using an internal chronological holdout, then refits on the full available history. ETS and ARIMA retain notebook 10's fixed specifications, with recorded Naive fallbacks keeping failed historical fits in the extended comparison.
+
+Chronos-Bolt Tiny uses a pinned November-2024 revision and median forecasts, without fine-tuning. The checkpoint predates evaluation, while overlap with older trade histories in pretraining is unverified. The first load downloads public weights to the standard Hugging Face cache. Dependencies are included in `requirements.txt`; existing PyTorch/device selection is retained.
+
+All extension outputs are saved under `results/extended_benchmark/`:
+
+| File | Contents |
+|---|---|
+| `predictions.parquet` | Keys, country, model, origin, horizon, target month, actual, forecast, frozen groups, source flags and fallback reasons |
+| `model_settings.csv` | Configurations, fresh LSTM epochs and validation dates, device, runtime, fallback counts and pinned checkpoint revision |
+| `origin_metrics.csv` | MAE, RMSE, sMAPE and comparison to Naive for each country, model, origin and horizon |
+| `group_metrics.csv` | The same origin-specific comparisons within HS chapters, imports/exports and size classes |
+| `accuracy_by_horizon.png` | Country-origin panels comparing horizons 1–3 |
+| `accuracy_by_origin.png` | Country-horizon panels comparing the three origins |
+| `relative_accuracy_by_{hs,flow,size}_{country}_{origin}.png` | Separate country-origin group figures, each with three horizon panels |
+
+Relative improvement is `100 × (Naive error − model error) / Naive error`: positive is better. Zero reference error gives an undefined relative change. Groups below 30 series are flagged but retained. Primary results are not pooled across origins. There are 27 detailed group figures plus the two overall figures.
+
+Notebook 16 streams a partial Parquet file and publishes final outputs only when all models complete. Notebook 17 requires final predictions and settings from the same run and checks complete keys and actuals against Naive. Partial files are not accepted. Validation records stay in notebook displays; no model weights or additional feature datasets are saved.
+
 ## Main findings
 
-- **RQ1:** Naive has the lowest March sMAPE for South Korea (74.62%); ARIMA leads Slovakia (70.26%) and the USA (72.32%). Neither machine learning model beats the best classical sMAPE within a country. Rankings depend on the metric: US ARIMA has the best sMAPE but the worst RMSE, while ETS leads US MAE and RMSE.
+- **RQ1:** Naive has the lowest March sMAPE for South Korea (74.62%); ARIMA leads Slovakia (70.26%) and the USA (72.32%). Neither XGBoost nor LSTM beats the best classical sMAPE within a country. Rankings depend on the metric: US ARIMA has the best sMAPE but the worst RMSE, while ETS leads US MAE and RMSE. In the complementary multi-origin view, Naive leads overall sMAPE in 26 of 27 country-origin-horizon comparisons, while Chronos leads MAE in 23. Subgroup results reveal useful differences: Chronos leads large-flow Korean and medium/large-flow US sMAPE in all nine comparisons for each group, and consistently improves on Naive for selected US product chapters.
 - **RQ2:** Auxiliary data offer conditional benefits. USA REER LSTM reduces MAE by 14.78% and RMSE by 19.44%, with a 0.829 percentage-point sMAPE improvement. Both Slovak models and South Korean LSTM worsen throughout; the remaining XGBoost comparisons are mixed.
 - **RQ3:** ARIMA has lower pooled post-event sMAPE and MAE in all three historical cohorts, while USA XGBoost has lower post-event RMSE. Both procedures respond to updated observations, but neither demonstrates advance event prediction or a causal Suez effect.
-- **RQ4:** Greater capacity does not consistently improve validation accuracy. Selected configurations differ by country, and five of six selected machine learning pipelines have higher March MAE than February MAE. This temporal change alone does not establish overfitting.
+- **RQ4:** Greater capacity does not consistently improve validation accuracy. Selected configurations differ by country, and five of six selected machine learning pipelines have higher March MAE than February MAE. This temporal change alone does not establish overfitting. The extended experiment also shows that greater training effort does not ensure better accuracy: recorded evaluation-stage CPU time totals approximately 5.1 minutes for Chronos inference versus 14.88 hours for LSTM epoch selection, refits and predictions. Initial configuration search and Chronos pretraining are excluded, so these are partial workflow timings rather than total development costs.
 
-Detailed numerical interpretation, figure discussion and conclusions appear at the ends of notebooks 13–15.
+Detailed interpretation of the March, REER and Suez findings appears at the ends of notebooks 13–15. Notebook 17 presents the extended results by origin, horizon and trade group; the report brings both forecasting views together.
 
 ## Assumptions and limitations
 
-The fixed target and available compute motivated one February holdout, small configuration grids and reuse of completed benchmarks. These choices support a focused comparison but do not establish general performance across forecast origins. The original March cohort selection is retrospective, and saved original predictions are unavailable for an independent paired audit.
+The original March experiment uses one February holdout, small configuration grids and reuse of completed benchmarks. Its cohort selection is retrospective, and saved original predictions are unavailable for an independent paired audit. The complementary extension freezes cohorts using December 2024 and earlier information and evaluates three spaced origins and three horizons. This broadens the evidence but remains a limited set of dates rather than proof of general performance across time.
 
 Zero completion assumes absent records mean no trade. Preceding-month trade availability is assumed; revised REER snapshots and the two-month lag do not guarantee historical publication availability. Raw MAE and RMSE are compared within countries rather than averaged across source scales.
 
-The Suez analysis uses a high-value sample, a short window and XGBoost configurations selected with 2026 evidence. Historical fitting is chronological, but configuration selection is retrospective. Verified shipping-route exposure, controls and publication vintages are unavailable, and changing source coverage may affect errors. Findings concern forecast response around the event, not causal attribution or general shock adaptation. Runtime and memory were not systematically measured, so RQ4 does not quantify computational efficiency.
+The Suez analysis uses a high-value sample, a short window and XGBoost configurations selected with 2026 evidence. Historical fitting is chronological, but configuration selection is retrospective. Verified shipping-route exposure, controls and publication vintages are unavailable, and changing source coverage may affect errors. Findings concern forecast response around the event, not causal attribution or general shock adaptation.
+
+The original experiments did not systematically record runtime or memory. The extension records evaluation-stage elapsed times, including fresh LSTM epoch selection, while excluding initial configuration search, Chronos pretraining and some preparation. These support a qualified discussion of computational effort, not a complete or hardware-normalised efficiency benchmark; memory use was not systematically measured.
